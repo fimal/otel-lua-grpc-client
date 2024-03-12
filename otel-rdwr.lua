@@ -13,7 +13,7 @@ local service_request = "ExportLogsServiceRequest"
 local method = "Export"
 local service = "LogsService"
 local proto_file = "opentelemetry/proto/collector/logs/v1/logs_service.proto"
-local tcp_port = "31017"
+local tcp_port = "9000"
 local host = "127.0.0.1"
 
 local function find_method(protos, my_package, my_service, my_method)
@@ -75,8 +75,8 @@ local function printTable( t )
     end    
 end
 protoc.reload()
-local message = [[ {"resource_logs":[{"scope_logs":[{"log_records":[{"attributes":[{"key":"descriptors","value":{"string_value":"[{\"profile\": \"test/waas-api-profile\",\"tag\": \"enforcer\",\"policy\": \"apiPolicy\",\"source\": \"222.222.223.111\",\"classifier\": \"httpbin-sample\",\"actor\": \"\",\"hash\": \"cs:true;sp:false\",\"rate\": \"5m\",\"rule_name\": \"404-status-code\",\"field\": \"response_code\",\"values\": \"404;\",\"block_period\": \"5m\"}]"}},{"key":"response_code","value":{"string_value":"404"}}]}]}]}]} ]]
-
+-- local message = [[ {"resource_logs":[{"scope_logs":[{"log_records":[{"attributes":[{"key":"descriptors","value":{"string_value":"[{\"profile\": \"test/waas-api-profile\",\"tag\": \"enforcer\",\"policy\": \"apiPolicy\",\"source\": \"222.222.223.111\",\"classifier\": \"httpbin-sample\",\"actor\": \"\",\"hash\": \"cs:true;sp:false\",\"rate\": \"5m\",\"rule_name\": \"404-status-code\",\"field\": \"response_code\",\"values\": \"404;\",\"block_period\": \"5m\"}]"}},{"key":"response_code","value":{"string_value":"404"}}]}]}]}]} ]]
+local my_table = {resource_logs={{scope_logs={{log_records={{attributes={{key="descriptors",value={string_value="[{\"profile\": \"test/waas-api-profile\",\"tag\": \"enforcer\",\"policy\": \"apiPolicy\",\"source\": \"1.1.1.1\",\"classifier\": \"httpbin-sample\",\"actor\": \"\",\"hash\": \"cs:true;sp:false\",\"rate\": \"5m\",\"rule_name\": \"404-status-code\",\"field\": \"response_code\",\"values\": \"404;\",\"block_period\": \"5m\"}]"}},{key="response_code",value={string_value="404"}}}}}}}}}}
 local p = protoc.new()
 
 if not file_exists(proto_file) then
@@ -100,8 +100,8 @@ if not m then
   print (("Undefined service method: %s/%s"):format(service, method))
 end
 
-local my_table = json.decode(message)
-
+-- local my_table = json.decode(message)
+printTable(my_table)
 print(("Input proto type: %s"):format(m.input_type))
 local bytes = pb.encode(m.input_type, my_table)
 local size = string.len(bytes)
