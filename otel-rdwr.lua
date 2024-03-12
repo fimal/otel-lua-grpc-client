@@ -16,6 +16,11 @@ local proto_file = "opentelemetry/proto/collector/logs/v1/logs_service.proto"
 local tcp_port = "9000"
 local host = "127.0.0.1"
 
+local response_status = "404"
+local response_key = "response_code"
+local enforcer_descriptors_key = "descriptors"
+local enforcer_descriptors = "[{\"profile\": \"test/waas-api-profile\",\"tag\": \"enforcer\",\"policy\": \"apiPolicy\",\"source\": \"222.222.223.111\",\"classifier\": \"httpbin-sample\",\"actor\": \"\",\"hash\": \"cs:true;sp:false\",\"rate\": \"5m\",\"rule_name\": \"404-status-code\",\"field\": \"response_code\",\"values\": \"404;\",\"block_period\": \"5m\"}]"
+
 local function find_method(protos, my_package, my_service, my_method)
     for k, loaded in pairs(protos) do
       if type(loaded) == "boolean" then
@@ -75,8 +80,16 @@ local function printTable( t )
     end    
 end
 protoc.reload()
--- local message = [[ {"resource_logs":[{"scope_logs":[{"log_records":[{"attributes":[{"key":"descriptors","value":{"string_value":"[{\"profile\": \"test/waas-api-profile\",\"tag\": \"enforcer\",\"policy\": \"apiPolicy\",\"source\": \"222.222.223.111\",\"classifier\": \"httpbin-sample\",\"actor\": \"\",\"hash\": \"cs:true;sp:false\",\"rate\": \"5m\",\"rule_name\": \"404-status-code\",\"field\": \"response_code\",\"values\": \"404;\",\"block_period\": \"5m\"}]"}},{"key":"response_code","value":{"string_value":"404"}}]}]}]}]} ]]
-local my_table = {resource_logs={{scope_logs={{log_records={{attributes={{key="descriptors",value={string_value="[{\"profile\": \"test/waas-api-profile\",\"tag\": \"enforcer\",\"policy\": \"apiPolicy\",\"source\": \"1.1.1.1\",\"classifier\": \"httpbin-sample\",\"actor\": \"\",\"hash\": \"cs:true;sp:false\",\"rate\": \"5m\",\"rule_name\": \"404-status-code\",\"field\": \"response_code\",\"values\": \"404;\",\"block_period\": \"5m\"}]"}},{key="response_code",value={string_value="404"}}}}}}}}}}
+-- Build message table
+local response_status_table = {}
+response_status_table["key"] = response_key
+response_status_table["value"] = { string_value = response_status }
+
+local enforcer_descriptors_table = {}
+enforcer_descriptors_table["key"] = enforcer_descriptors_key
+enforcer_descriptors_table["value"] = { string_value = enforcer_descriptors}
+
+local my_table = {resource_logs={{scope_logs={{log_records={{attributes={ enforcer_descriptors_table, response_status_table } } } } } } } }
 local p = protoc.new()
 
 if not file_exists(proto_file) then
@@ -101,7 +114,6 @@ if not m then
 end
 
 -- local my_table = json.decode(message)
-printTable(my_table)
 print(("Input proto type: %s"):format(m.input_type))
 local bytes = pb.encode(m.input_type, my_table)
 local size = string.len(bytes)
@@ -116,7 +128,7 @@ local prefix = {
     string.char(bit.band(bit.rshift(size, 8), 0xFF)),
     string.char(bit.band(size, 0xFF))
   }
-local my_grpc_message = table.concat(prefix, "") .. bytes
+local my_grpc_message = table.concat(prefix) .. bytes
 
 local uri = ("http://%s:%s/%s.%s/%s"):format(host,tcp_port,package,service,method)
 local req = request.new_from_uri(uri)
