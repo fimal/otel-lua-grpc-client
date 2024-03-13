@@ -1,7 +1,7 @@
 local pb = require("pb")
 local protoc = require("protoc")
-local request = require("http.request")
 local bit = require("bit")
+
 local json
 if not os.getenv("LUAUNIT") then
   json = require("cjson")
@@ -90,8 +90,8 @@ enforcer_descriptors_table["key"] = enforcer_descriptors_key
 enforcer_descriptors_table["value"] = { string_value = enforcer_descriptors}
 
 local my_table = {resource_logs={{scope_logs={{log_records={{attributes={ enforcer_descriptors_table, response_status_table } } } } } } } }
+-- Load proto
 local p = protoc.new()
-
 if not file_exists(proto_file) then
     print(("pb file: %s is not found"):format(proto_file))
 end
