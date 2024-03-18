@@ -6,7 +6,7 @@ local json
 if not os.getenv("LUAUNIT") then
   json = require("cjson")
 end
-local http_client = require("http.client")
+local request = require "http.request"
 
 local package = "opentelemetry.proto.collector.logs.v1"
 local service_request = "ExportLogsServiceRequest"
