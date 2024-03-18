@@ -113,6 +113,24 @@ if not m then
   print (("Undefined service method: %s/%s"):format(service, method))
 end
 
+--[[
+# in case provided compiled schema .pb file.
+  local pb_file = "otel.pb"
+  if not file_exists(proto_file) then
+      print(("pb file: %s is not found"):format(proto_file))
+  end
+  local inp = io.open(pb_file, "rb")
+  local compiled_data = inp:read("*all")
+
+  local status, offset = pb.load(compiled_data)
+  if not status then
+      print(("error %s during pb load"):format(offset))
+  end
+  local proto_input_type = package .. "." .. service_request
+  local bytes = pb.encode(proto_input_type, my_table)
+
+]] 
+
 -- local my_table = json.decode(message)
 print(("Input proto type: %s"):format(m.input_type))
 local bytes = pb.encode(m.input_type, my_table)
