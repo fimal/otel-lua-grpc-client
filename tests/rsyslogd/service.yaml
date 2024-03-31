@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rsyslog-server-service
+  labels:
+    app: rsyslog-server
+spec:
+  ports:
+  - name: upd
+    port: 514
+    protocol: UDP
+    nodePort: 31023
+  selector:
+    app: rsyslog-server
+  type: NodePort

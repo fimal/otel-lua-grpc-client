@@ -1,6 +1,7 @@
 local pb = require("pb")
 local protoc = require("protoc")
 local bit = require("bit")
+local json = require("cjson")
 
 local json
 if not os.getenv("LUAUNIT") then
@@ -13,13 +14,14 @@ local service_request = "ExportLogsServiceRequest"
 local method = "Export"
 local service = "LogsService"
 local proto_file = "opentelemetry/proto/collector/logs/v1/logs_service.proto"
-local tcp_port = "9000"
+local tcp_port = "31017"
 local host = "127.0.0.1"
 
 local response_status = "404"
 local response_key = "response_code"
 local enforcer_descriptors_key = "descriptors"
-local enforcer_descriptors = "[{\"profile\": \"test/waas-api-profile\",\"tag\": \"enforcer\",\"policy\": \"apiPolicy\",\"source\": \"222.222.223.111\",\"classifier\": \"httpbin-sample\",\"actor\": \"\",\"hash\": \"cs:true;sp:false\",\"rate\": \"5m\",\"rule_name\": \"404-status-code\",\"field\": \"response_code\",\"values\": \"404;\",\"block_period\": \"5m\"}]"
+local enforcer_descriptors1 = "[{\"profile\": \"test/waas-api-profile\",\"tag\": \"enforcer\",\"policy\": \"apiPolicy\",\"source\": \"111.111.111.111\",\"classifier\": \"httpbin-sample\",\"actor\": \"\",\"hash\": \"cs:true;sp:false\",\"rate\": \"5m\",\"rule_name\": \"404-status-code\",\"field\": \"response_code\",\"values\": \"404;\",\"block_period\": \"5m\"}]"
+local enforcer_descriptors2 = "[{\"profile\": \"test/waas-api-profile\",\"tag\": \"enforcer\",\"policy\": \"apiPolicy\",\"source\": \"222.222.222.222\",\"classifier\": \"httpbin-sample\",\"actor\": \"\",\"hash\": \"cs:true;sp:false\",\"rate\": \"5m\",\"rule_name\": \"404-status-code\",\"field\": \"response_code\",\"values\": \"404;\",\"block_period\": \"5m\"}]"
 
 local function find_method(protos, my_package, my_service, my_method)
     for k, loaded in pairs(protos) do
@@ -87,9 +89,29 @@ response_status_table["value"] = { string_value = response_status }
 
 local enforcer_descriptors_table = {}
 enforcer_descriptors_table["key"] = enforcer_descriptors_key
-enforcer_descriptors_table["value"] = { string_value = enforcer_descriptors}
+enforcer_descriptors_table["value"] = { string_value = enforcer_descriptors1}
 
-local my_table = {resource_logs={{scope_logs={{log_records={{attributes={ enforcer_descriptors_table, response_status_table } } } } } } } }
+local enforcer_descriptors_table2 = {}
+enforcer_descriptors_table2["key"] = enforcer_descriptors_key
+enforcer_descriptors_table2["value"] = { string_value = enforcer_descriptors2}
+
+local send_buffer = {}
+local log_buffer_data = {}
+local log_buffer_index = 0
+for i=1, 1 do
+  log_buffer_index = log_buffer_index+1
+  print(log_buffer_index)
+  log_buffer_data[log_buffer_index] = { attributes = { enforcer_descriptors_table, response_status_table } }
+  log_buffer_index = log_buffer_index+1
+  log_buffer_data[log_buffer_index] = { attributes = { enforcer_descriptors_table2, response_status_table } }
+end
+
+for i=1,log_buffer_index do
+  table.insert(send_buffer,log_buffer_data[i] )
+end
+
+local my_table = {resource_logs={{scope_logs={{log_records= send_buffer } } } } }
+print(json.encode(my_table))
 -- Load proto
 local p = protoc.new()
 if not file_exists(proto_file) then
@@ -133,6 +155,7 @@ end
 
 -- local my_table = json.decode(message)
 print(("Input proto type: %s"):format(m.input_type))
+-- printTable(my_table)
 local bytes = pb.encode(m.input_type, my_table)
 local size = string.len(bytes)
 
